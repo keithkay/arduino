@@ -1,0 +1,110 @@
+/*
+ * LED Matrix Bitmap Display v2
+ *
+ * by: Keith Kay
+ * 11/27/2013
+ * CC by-sa v3.0 - http://creativecommons.org/licenses/by-sa/3.0/
+ * http://keithkay.com
+ *
+ * This sketch displays a bitmap or series of bitmaps on a 8x8 LED matrix, and implements the following
+ * functionality:
+ * - supports a variable number of frames as defined by the constant "frames"
+ * - use of a potentiometer to control the frame rate
+ *
+ * Portions of this code from:
+ *
+ * “Arduino Cookbook, Second Edition"
+ * by Michael Margolis with Nick Weldin (O’Reilly). Copyright 2012 Michael Margolis, Nick Weldin,
+ * 978-1-4493-1387-6
+ *
+ */
+
+// Note that if you are using Keith's "Processing Bitmap Generator for Adruino" you need to move the "frames"
+// declaration up before the array, as it will be the last thing written to your bitmap file.
+
+// <-- Copy and paste your bitmap array beginning here, or you can write it from scratch -->>
+
+const int frames = 16; // Constant defining the number of frames
+
+byte imgFrame[frames][8] = {
+{   B11111111,B10011001,B10011001,B11111111,B11100111,B11000011,B11011011,B11111111}, // Each row here represents one frame
+{   B11111111,B10011001,B10011001,B11111111,B11100111,B11000011,B11011011,B11111111},
+{   B11111111,B10011001,B10011001,B11111111,B11100111,B11000011,B11011011,B11111111},
+{   B11111111,B11111111,B10011001,B11111111,B11100111,B11000011,B11011011,B11111111},
+{   B11111111,B11111111,B11111111,B11111111,B11100111,B11000011,B11011011,B11111111},
+{   B11111111,B11111111,B10011001,B11111111,B11100111,B11000011,B11011011,B11111111},
+{   B11111111,B10011001,B10011001,B11111111,B11100111,B11000011,B11011011,B11111111},
+{   B11111111,B10011001,B10011001,B11111111,B11100111,B11000011,B11011011,B11111111},
+{   B11111111,B11111111,B10011001,B11111111,B11100111,B11000011,B11011011,B11111111},
+{   B11111111,B11111111,B11111111,B11111111,B11100111,B11000011,B11011011,B11111111},
+{   B11111111,B11111111,B10011001,B11111111,B11100111,B11000011,B11011011,B11111111},
+{   B11111111,B10011001,B10011001,B11111111,B11100111,B11000011,B11011011,B11111111},
+{   B11111111,B10011001,B10011001,B11111111,B11100111,B11000011,B11011011,B11111111},
+{   B11111111,B10011001,B10011001,B11111111,B11011011,B11011011,B11000011,B11111111},
+{   B11111111,B10011001,B10011001,B11111111,B11011011,B11011011,B11000011,B11111111},
+{   B11111111,B10011001,B10011001,B11111111,B11011011,B11011011,B11000011,B11111111},
+};
+
+// <-- End copy and paste. Make sure you overright the array already here -->>
+
+// define the constants used for sensor / emitter pins
+const int columnPins[] = { 6, 7, 8, 9, 2, 3, 4, 5 };      // array holding the pin numbers of the rows
+const int rowPins[] = { 15, 12, 11, 10, 19, 18, 17, 16 }; // array holding the pin numbers of the columns
+const int potPin = A0; // potentiometer 
+
+// define variables used for readings and programatic control
+int row;
+int col;
+int potVal;
+int frameDelay = 0;
+int currentFrame=0;
+
+void setup() {
+
+  for (int i=0; i<8; i++) {
+
+    // set each pin to output
+    pinMode(columnPins[i], OUTPUT);
+    pinMode(rowPins[i], OUTPUT);
+
+    //ensure each LED is off
+    digitalWrite(columnPins[i], HIGH);
+    digitalWrite(rowPins[i], LOW);
+
+  }  
+}
+
+void loop() {
+
+  potVal = analogRead(potPin);    // read the voltage on the pot
+  frameDelay = map(potVal, 0, 1052, 1000, 50); 
+
+  if (currentFrame < frames) {
+    show(imgFrame[currentFrame++], frameDelay);
+  } else {
+    currentFrame = 0;
+  }
+}
+
+void show( byte * image, unsigned long duration) {
+
+  unsigned long start = millis();        // begin timing the animation
+  while (start + duration > millis())    // loop until the duration is reached
+  {
+    for (row = 0; row < 8; row++ )
+    {
+      digitalWrite(rowPins[row], HIGH);  // connect a whole row to +5v
+      for (col = 0; col < 8; col++)
+      {
+        boolean pixel = bitRead(image[row], 7-col);
+        if (pixel == 1)
+        {
+          digitalWrite(columnPins[col], LOW);  // connect column to grnd
+        }
+        delayMicroseconds(300);    //small delay for each LED
+        digitalWrite(columnPins[col], HIGH);  // disconnect column from grnd
+      }
+      digitalWrite(rowPins[row], LOW);  // disconnect a whole row
+    }
+  }
+}
